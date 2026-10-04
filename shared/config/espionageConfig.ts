@@ -1,0 +1,2 @@
+export const ESPIONAGE_CONFIG = { scanCost: 250, spyCost: 500, sabotageCost: 1000, baseSuccessChance: 0.65, minSuccessChance: 0.05, maxSuccessChance: 0.95, reportLimit: 100, agentStartingCount: 1 } as const;
+export type EspionageOperation = "scan" | "spy" | "sabotage";

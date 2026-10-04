@@ -1,0 +1,1 @@
+export const FORUM_CONFIG = { maxTitleLength: 160, maxBodyLength: 12000, maxReplyLength: 8000, pageSize: 25, maxThreadsPerHour: 10, maxRepliesPerMinute: 20, categories: ["general","strategy","diplomacy","trade","support","lore"] as const } as const;

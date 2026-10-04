@@ -1,0 +1,1 @@
+export const FRIENDS_CONFIG = { pageSize: 50, maxPendingRequests: 100, maxRequestsPerHour: 20, statuses: ["offline","online","away","busy"] as const } as const;
