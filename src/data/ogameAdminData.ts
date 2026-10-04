@@ -1,0 +1,10 @@
+import type { AnyRecord } from '../types';
+export const DEFAULT_OGAME_UNIVERSE_CONFIG: AnyRecord = { universeName: 'Alpha Prime', speed: 1, fleetSpeed: 1 };
+export const INITIAL_ADMIN_USERS: AnyRecord[] = [];
+export const INITIAL_ADMIN_BANS: AnyRecord[] = [];
+export const INITIAL_ADMIN_PLANETS: AnyRecord[] = [];
+export const INITIAL_ADMIN_FLEET_MISSIONS: AnyRecord[] = [];
+export const INITIAL_ADMIN_DEBRIS_FIELDS: AnyRecord[] = [];
+export const INITIAL_ADMIN_SUPPORT_TICKETS: AnyRecord[] = [];
+export const INITIAL_ADMIN_SECURITY_ALERTS: AnyRecord[] = [];
+export const INITIAL_ADMIN_GLOBAL_EVENTS: AnyRecord[] = [];

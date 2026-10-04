@@ -1,0 +1,10 @@
+import type { AnyRecord } from './types';
+export const INITIAL_OGAME_TECHNOLOGIES: AnyRecord[] = [];
+export const INITIAL_OGAME_FACILITIES: AnyRecord[] = [];
+export const INITIAL_OGAME_SHIPS: AnyRecord[] = [];
+export const INITIAL_OGAME_DEFENSES: AnyRecord[] = [];
+export const INITIAL_MEGASTRUCTURES: AnyRecord[] = [];
+export const INITIAL_EXPEDITIONS: AnyRecord[] = [];
+export const INITIAL_EXPEDITION_LOGS: AnyRecord[] = [];
+export const INITIAL_FLEET_PRESETS: AnyRecord[] = [];
+export const FLEET_FORMATIONS: AnyRecord[] = [];
