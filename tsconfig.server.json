@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "outDir": "./dist-server",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "removeComments": false,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "server/index.ts",
+    "server/loadEnv.ts",
+    "server/logger.ts",
+    "server/db/**/*.ts",
+    "server/adminPermissions.ts",
+    "server/routes-admin-terminal.ts",
+    "server/services/adminTerminalService.ts",
+    "shared/schema.ts"
+  ],
+  "exclude": ["node_modules", "dist", "dist-server", "src"]
+}
