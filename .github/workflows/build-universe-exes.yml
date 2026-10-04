@@ -9,10 +9,11 @@ on:
       - "tools/UniverseClientLauncher/**"
       - "start-server.bat"
       - "package.json"
+      - "package-lock.json"
       - ".github/workflows/build-universe-exes.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -20,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -32,26 +35,55 @@ jobs:
       - name: Build Universe Client EXE
         run: dotnet publish tools/UniverseClientLauncher/UniverseClientLauncher.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 
-      - name: Assemble portable runtime package
+      - name: Replace repository launcher binaries
+        shell: pwsh
+        run: |
+          Copy-Item "tools/UniverseServerLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseServer.exe" "universe-server.exe" -Force
+          Copy-Item "tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe" "universe-client.exe" -Force
+
+      - name: Validate native PE binaries
+        shell: pwsh
+        run: |
+          $server = Get-Item "universe-server.exe"
+          $client = Get-Item "universe-client.exe"
+          if ($server.Length -lt 1000000) { throw "universe-server.exe is unexpectedly small: $($server.Length) bytes" }
+          if ($client.Length -lt 1000000) { throw "universe-client.exe is unexpectedly small: $($client.Length) bytes" }
+          Write-Host "UniverseServer.exe: $($server.Length) bytes"
+          Write-Host "UniverseClient.exe: $($client.Length) bytes"
+
+      - name: Assemble portable runtime packages
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release/UniverseServer,release/UniverseClient | Out-Null
+          Copy-Item universe-server.exe release/UniverseServer/
+          Copy-Item universe-client.exe release/UniverseClient/
           Copy-Item start-server.bat release/UniverseServer/
           Copy-Item package.json release/UniverseClient/
           Copy-Item package-lock.json release/UniverseClient/ -ErrorAction SilentlyContinue
-          Copy-Item tools/UniverseServerLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseServer.exe release/UniverseServer/
-          Copy-Item tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe release/UniverseClient/
           Compress-Archive -Path release/UniverseServer/* -DestinationPath release/UniverseServer-win-x64.zip -Force
           Compress-Archive -Path release/UniverseClient/* -DestinationPath release/UniverseClient-win-x64.zip -Force
 
-      - name: Upload Universe Server EXE
+      - name: Upload Universe Server EXE package
         uses: actions/upload-artifact@v4
         with:
           name: UniverseServer-win-x64
           path: release/UniverseServer-win-x64.zip
 
-      - name: Upload Universe Client EXE
+      - name: Upload Universe Client EXE package
         uses: actions/upload-artifact@v4
         with:
           name: UniverseClient-win-x64
           path: release/UniverseClient-win-x64.zip
+
+      - name: Commit rebuilt EXEs to main
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add universe-server.exe universe-client.exe
+          if (git diff --cached --quiet) {
+            Write-Host "No launcher binary changes to commit."
+            exit 0
+          }
+          git commit -m "build: rebuild Universe server and client Windows launchers"
+          git push origin HEAD:main
