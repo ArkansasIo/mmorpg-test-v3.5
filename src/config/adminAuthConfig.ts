@@ -1,7 +1,7 @@
 import type { AdminAuthSession, AdminCredentialAccount, AnyRecord } from '../types';
 
 export type AdminUrlLoginMode = 'direct' | 'secure' | 'root' | 'magic' | 'params' | 'create' | string;
-const defaultAccount: AdminCredentialAccount = { id: 'local-admin', username: 'admin', email: 'admin@localhost', loginCode: 'admin', passcode: 'admin', securityPin: '0000', role: 'super_admin' };
+const defaultAccount: AdminCredentialAccount = { id: 'local-admin', username: '', email: '', loginCode: '', passcode: '', securityPin: '', role: 'super_admin' };
 export const CANONICAL_ADMIN_ACCOUNTS: AdminCredentialAccount[] = [defaultAccount];
 export const ADMIN_PERMISSIONS_REGISTRY: AnyRecord[] = [];
 
@@ -22,7 +22,7 @@ export function createRootAdminAccount(input: Partial<AdminCredentialAccount> = 
 }
 export function generateAdminUrlLogin(account: AdminCredentialAccount = defaultAccount, options: AnyRecord = {}): string {
   const params = new URLSearchParams({ admin: account.username || 'admin', mode: options.mode || 'direct', tab: options.tab || 'crown' });
-  if (options.includePin) params.set('pin', account.securityPin || '0000');
+  if (options.includePin) params.set('pin', account.securityPin || '');
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
 export function processUrlAdminLogin(_search = '', _hash = ''): AnyRecord {
