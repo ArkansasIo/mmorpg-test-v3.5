@@ -18,6 +18,7 @@
   },
   "include": [
     "server/index.ts",
+    "server/**/*.d.ts",
     "server/loadEnv.ts",
     "server/logger.ts",
     "server/db/**/*.ts",
