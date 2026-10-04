@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Key } from 'lucide-react';
-import { Sidebar } from './components/Sidebar';
+import { Sidebar, OGAME_NAV_SECTIONS } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { HudMetrics } from './components/HudMetrics';
 import { sound } from './sound';
@@ -164,6 +164,7 @@ import { DiplomacyView } from './components/views/DiplomacyView';
 import { MissionsView } from './components/views/MissionsView';
 import { GalacticNewsView } from './components/views/GalacticNewsView';
 import { CodexDocumentationView } from './components/views/CodexDocumentationView';
+import { RouteNotFoundView } from './components/views/RouteNotFoundView';
 import { applyThemeToDOM, getActiveThemeId } from './config/themeConfig';
 import { AICSystemView } from './components/views/AICSystemView';
 import { MasterUpgradesView } from './components/views/MasterUpgradesView';
@@ -3925,7 +3926,8 @@ export default function App() {
               />
             )}
 
-            {(activeRoute === 'admin-dashboard' ||
+            {(activeRoute === 'admin' ||
+              activeRoute === 'admin-dashboard' ||
               activeRoute === 'turn-system' ||
               activeRoute === 'admin-crown' ||
               activeRoute === 'admin-empire-history' ||
@@ -4212,6 +4214,14 @@ export default function App() {
             {activeRoute === 'codex-doc' && (
               <CodexDocumentationView />
             )}
+
+            {(() => {
+              const registeredRoutes = new Set(OGAME_NAV_SECTIONS.flatMap((section) => section.items.map((item) => item.id)));
+              registeredRoutes.add('admin');
+              return !registeredRoutes.has(activeRoute) ? (
+                <RouteNotFoundView route={activeRoute} onNavigate={setActiveRoute} />
+              ) : null;
+            })()}
           </div>
         </main>
         <Footer
