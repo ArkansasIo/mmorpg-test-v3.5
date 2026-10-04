@@ -1,26 +1,22 @@
-import React,{useEffect,useState} from "react";
-import {Terminal,ShieldCheck,RefreshCw} from "lucide-react";
+import React,{useEffect,useMemo,useState} from "react";
+import {Activity,Database,RefreshCw,Search,ShieldCheck,Terminal,Users,Server,AlertTriangle} from "lucide-react";
 import {executeAdminTerminal,getAdminTerminalHistory,getAdminTerminalMenu,type AdminMenuNode} from "../../lib/adminTerminal";
 
 export function AdminSystemsTerminalView(){
- const [menu,setMenu]=useState<AdminMenuNode[]>([]); const [role,setRole]=useState(""); const [command,setCommand]=useState("status");
- const [output,setOutput]=useState<unknown>(null); const [history,setHistory]=useState<any[]>([]); const [error,setError]=useState("");
- const load=async()=>{try{setError("");const m=await getAdminTerminalMenu();setMenu(m.menu);setRole(m.role);setHistory(await getAdminTerminalHistory(25));}catch(e){setError(e instanceof Error?e.message:"Admin terminal unavailable");}};
+ const [menu,setMenu]=useState<AdminMenuNode[]>([]),[role,setRole]=useState(""),[command,setCommand]=useState("status");
+ const [output,setOutput]=useState<Record<string,unknown>|null>(null),[history,setHistory]=useState<any[]>([]),[error,setError]=useState(""),[query,setQuery]=useState("");
+ const load=async()=>{try{setError("");const m=await getAdminTerminalMenu();setMenu(m.menu);setRole(m.role);setHistory(await getAdminTerminalHistory(25));}catch(e){setError(e instanceof Error?e.message:"Admin systems unavailable");}};
  useEffect(()=>{void load();},[]);
- const run=async()=>{try{setError("");const r=await executeAdminTerminal(command);setOutput(r.result);setHistory(await getAdminTerminalHistory(25));}catch(e){setError(e instanceof Error?e.message:"Command failed");}};
- return <div className="space-y-4 font-mono">
-  <div className="border-2 border-slate-800 bg-slate-950 text-white p-5">
-   <div className="flex items-center justify-between"><div className="flex items-center gap-2"><Terminal size={18} className="text-cyan-400"/><span className="font-black">ADMIN SYSTEMS TERMINAL</span></div><span className="text-[10px] text-emerald-400"><ShieldCheck size={12} className="inline mr-1"/>{role||"AUTHENTICATING"}</span></div>
-   <p className="text-[11px] text-slate-400 mt-2">Server-authoritative administration. Commands are allow-listed; arbitrary SQL execution is disabled.</p>
-  </div>
-  {error&&<div className="border border-red-300 bg-red-50 text-red-700 p-3 text-xs">{error}</div>}
-  <div className="grid lg:grid-cols-[280px_1fr] gap-4">
-   <aside className="border border-slate-300 bg-white p-3 space-y-2"><div className="text-[10px] font-bold uppercase text-slate-500">Systems Menu</div>{menu.map(n=><button key={n.id} onClick={()=>n.commands?.[0]&&setCommand(n.commands[0])} className={"w-full text-left p-2 border text-xs "+(n.commands?.includes(command)?"bg-slate-900 text-white":"bg-white hover:bg-slate-50")}><div className="font-bold">{n.label}</div><div className="text-[10px] opacity-70 mt-1">{n.description}</div></button>)}</aside>
-   <main className="border border-slate-300 bg-white p-4 space-y-4">
-    <div className="flex gap-2"><select value={command} onChange={e=>setCommand(e.target.value)} className="flex-1 border p-2 text-xs">{menu.flatMap(n=>n.commands||[]).map(c=><option key={c}>{c}</option>)}</select><button onClick={run} className="px-4 py-2 bg-slate-900 text-white text-xs font-bold">EXECUTE</button><button onClick={load} className="p-2 border" title="Refresh"><RefreshCw size={14}/></button></div>
-    <pre className="min-h-48 max-h-[500px] overflow-auto bg-slate-950 text-emerald-300 p-4 text-xs">{output?JSON.stringify(output,null,2):"Ready."}</pre>
-    <div><div className="text-[10px] font-bold text-slate-500 uppercase mb-2">Recent Terminal History</div>{history.map(h=><div key={h.id} className="border-t p-2 text-[10px]"><span className="font-bold">{h.command}</span><span className="text-slate-500 ml-2">{new Date(h.created_at).toLocaleString()}</span></div>)}</div>
-   </main>
-  </div>
+ const run=async()=>{try{setError("");let args:Record<string,unknown>={};if(command==="users search")args={query};if(command==="user ban"||command==="user unban")args={userId:query};if(command==="config get")args={key:query};const r=await executeAdminTerminal(command,args);setOutput((r.result||null) as Record<string,unknown>);setHistory(await getAdminTerminalHistory(25));}catch(e){setError(e instanceof Error?e.message:"Command failed");}};
+ const commands=useMemo(()=>menu.flatMap(n=>n.commands||[]),[menu]); const stats=output||{};
+ return <div className="space-y-4">
+  <div className="bg-slate-950 text-white border border-cyan-900 p-5 shadow-xl"><div className="flex flex-wrap justify-between gap-4 items-center"><div><div className="flex items-center gap-2 text-cyan-300 text-xs font-black tracking-widest"><Terminal size={16}/> ADMIN SYSTEMS COMMAND CENTER</div><h2 className="text-2xl font-black mt-1">Server Administration</h2><p className="text-slate-400 text-xs mt-1">Server-authoritative controls with RBAC, audit logging, and allow-listed commands.</p></div><div className="flex items-center gap-2 border border-emerald-700 bg-emerald-950/40 px-3 py-2 text-xs"><ShieldCheck size={15} className="text-emerald-400"/><span>{role||"AUTHENTICATING"}</span></div></div></div>
+  {error&&<div className="border border-red-500/40 bg-red-950/30 text-red-300 p-3 text-xs flex gap-2"><AlertTriangle size={15}/>{error}</div>}
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{[["Runtime",String(stats.status||"—"),Activity],["Users",String(stats.users??"—"),Users],["Admins",String(stats.administrators??"—"),ShieldCheck],["Memory",stats.memoryMb?String(stats.memoryMb)+" MB":"—",Server]].map(([label,value,Icon])=><div key={String(label)} className="border border-slate-700 bg-slate-950 p-4 text-white"><Icon size={16} className="text-cyan-400"/><div className="text-[10px] text-slate-500 uppercase mt-2">{label}</div><div className="text-lg font-black">{value}</div></div>)}</div>
+  <div className="grid lg:grid-cols-[260px_1fr] gap-4"><aside className="border border-slate-300 bg-white p-3 space-y-2"><div className="text-[10px] font-bold uppercase text-slate-500">Authorized Systems</div>{menu.map(n=><button key={n.id} onClick={()=>n.commands?.[0]&&setCommand(n.commands[0])} className={"w-full text-left p-2 border text-xs "+(n.commands?.includes(command)?"bg-slate-900 text-white":"bg-white hover:bg-slate-50")}><div className="font-bold">{n.label}</div><div className="text-[10px] opacity-70">{n.description}</div></button>)}</aside>
+   <main className="border border-slate-300 bg-white p-4 space-y-4"><div className="flex flex-wrap gap-2 items-center"><select value={command} onChange={e=>setCommand(e.target.value)} className="border p-2 text-xs min-w-52">{commands.map(c=><option key={c}>{c}</option>)}</select><div className="relative flex-1 min-w-52"><Search size={14} className="absolute left-2 top-2.5 text-slate-400"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Query, user ID, or config key" className="w-full border p-2 pl-7 text-xs"/></div><button onClick={run} className="px-4 py-2 bg-slate-950 text-white text-xs font-black">EXECUTE</button><button onClick={()=>{void load();setCommand("status");}} className="p-2 border" title="Refresh"><RefreshCw size={14}/></button></div>
+    <pre className="min-h-56 max-h-[460px] overflow-auto bg-slate-950 text-emerald-300 p-4 text-xs">{output?JSON.stringify(output,null,2):"Ready. Execute status to load live server metrics."}</pre>
+    <div><div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase mb-2"><Database size={13}/>Recent Terminal Activity</div>{history.map(h=><div key={h.id} className="border-t p-2 text-[10px] flex justify-between gap-2"><span className="font-bold">{h.command}</span><span className="text-slate-500">{h.created_at?new Date(h.created_at).toLocaleString():""}</span></div>)}</div>
+   </main></div>
  </div>;
 }
