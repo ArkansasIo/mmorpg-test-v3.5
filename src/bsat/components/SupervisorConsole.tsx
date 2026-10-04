@@ -143,7 +143,7 @@ export const SupervisorConsole: React.FC = () => {
 
   const handleHealthProbe = () => {
     if (serverStatus !== 'ONLINE') {
-      addLog('error', `[HTTP PROBE] Connection refused at http://localhost:3000/api/health (Server is ${serverStatus})`);
+      addLog('error', `[HTTP PROBE] Connection refused at http://localhost:5001/api/status/health (Server is ${serverStatus})`);
       return;
     }
     addLog(
