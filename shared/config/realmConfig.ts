@@ -1,0 +1,1 @@
+export const REALM_CONFIG = { pageSize: 50, maxMembersPerRealm: 10000, maxRealmsPerPlayer: 3, statuses: ["active","maintenance","closed"] as const } as const;

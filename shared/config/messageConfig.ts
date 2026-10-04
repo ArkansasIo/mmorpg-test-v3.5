@@ -1,0 +1,1 @@
+export const MESSAGE_CONFIG = { maxSubjectLength: 160, maxBodyLength: 8000, pageSize: 50, maxRecipientsPerMessage: 25, maxMessagesPerMinute: 20 } as const;
