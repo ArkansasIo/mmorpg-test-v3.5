@@ -317,6 +317,8 @@ export const OGAME_NAV_SECTIONS: OGameNavSection[] = [
     defaultRoute: 'admin-dashboard',
     items: [
       { id: 'admin-dashboard', label: 'Admin Control Panel' },
+      { id: 'admin-terminal', label: '🖥️ Admin Systems Terminal' },
+      { id: 'server-config', label: '🛠️ Server Configuration' },
       { id: 'env-config', label: '⚙️ Environment & Setup Suite', badge: 'EXE' },
       { id: 'bsat', label: '⚡ BSAT Studio (.BAT/.SH)', badge: 'DEV' },
       { id: 'turn-system', label: 'Turn Engine (6 Turns/Min)' },
