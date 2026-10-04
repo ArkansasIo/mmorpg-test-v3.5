@@ -2,65 +2,57 @@
 
 Full-stack React/Vite + TypeScript/Express + PostgreSQL/Drizzle strategy MMO prototype.
 
-## Architecture
+## Stack
 
-- Frontend: React 19 + Vite
+- Frontend: React 19 + Vite 8 + Three.js
 - Backend: Node.js + Express + TypeScript
 - Database: PostgreSQL + Drizzle ORM
-- Authentication: server-side sessions
-- Admin: server-side RBAC with audited allow-listed commands
-- Windows tooling: .NET 8 launchers, developer IDE, and admin terminal
-
-## Requirements
-
-- Node.js 22+
-- npm 10+
-- PostgreSQL 16+
-- .NET 8 SDK only when building Windows tools
+- Authentication: server-side sessions with scrypt password hashing
+- Security: allow-listed CORS, secure production cookies, rate limiting, admin IP controls, CodeQL/dependency-review CI
+- Windows tooling: native launcher scripts and .NET tools
 
 ## Local setup
 
-1. Copy .env.example to .env.
-2. Configure an existing PostgreSQL database in DATABASE_URL.
-3. Set SESSION_SECRET to a random value of at least 32 characters.
-4. Set CORS_ORIGINS=http://localhost:3000.
-5. Install dependencies: npm install --no-audit --no-fund
-6. Validate: npm run lint, npm run build, npm run server:build
-7. Run the backend: npm run server:start
-8. During development, run the frontend separately: npm run dev
+1. Copy `.env.example` to `.env`.
+2. Configure `DATABASE_URL`.
+3. Generate a random `SESSION_SECRET` of at least 32 characters.
+4. Set `CORS_ORIGINS` to the exact browser origins you trust.
+5. In production, configure `ADMIN_BOOTSTRAP_USERNAME`, `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD`, and `ADMIN_SECURITY_CODE`; there are no production defaults.
+6. Install dependencies: `npm install --no-audit --no-fund`.
+7. Validate: `npm run check`.
+8. Start the backend: `npm run server:start`.
+9. During development, run the frontend separately: `npm run dev`.
 
-## PostgreSQL troubleshooting
+## Validation commands
 
-The Windows server launcher performs a TCP preflight but does not install PostgreSQL or invent credentials.
+- `npm run lint` — TypeScript check for the frontend
+- `npm run build` — Vite production build
+- `npm run server:build` — backend TypeScript build
+- `npm run check` — all three checks
+- `npm run test:dependency` — dependency smoke test
+- `npm run server:dev` — backend development server
+- `npm run dev` — frontend development server
 
-If you see ECONNREFUSED, start PostgreSQL and verify:
+## Database
 
-    Test-NetConnection localhost -Port 5432
+The checked-in schema is `database/schema.sql`, with incremental migrations under `database/migrations/`. PostgreSQL is authoritative for multiplayer state; browser local storage is not a security boundary.
 
-Then check that DATABASE_URL uses the correct host, port, database, username, and password.
+If PostgreSQL is unavailable, the backend should be treated as unavailable rather than silently inventing production credentials or authoritative state.
 
-The checked-in database schema and migrations must be applied before database-backed features are used.
+## Security notes
 
-## Health endpoint
+- Never commit `.env` or real credentials.
+- Production requires a strong `SESSION_SECRET` and explicit admin bootstrap credentials.
+- Passwords are stored with salted scrypt hashes; legacy SHA-256 hashes are upgraded on successful login.
+- Self-service password reset is disabled until a verified out-of-band reset-token flow is configured.
+- Credentialed CORS is restricted to `CORS_ORIGINS`; arbitrary origin reflection is disabled.
+- Production session cookies use `Secure`, `HttpOnly`, and `SameSite=Lax`.
+- Admin IP checks use Express's proxy-aware `req.ip`; configure `TRUST_PROXY` only when a trusted reverse proxy is actually present.
+- The repository CI runs frontend/backend builds and security analysis.
+- The default Express MemoryStore is for development only; production should use a persistent session store before public deployment.
 
-GET /api/status/health returns HTTP 200 when PostgreSQL is queryable and HTTP 503 when it is unavailable.
+## Current repository status
 
-## Main scripts
+The previously incomplete frontend and backend source trees have been restored, including the game views, data systems, Express services/routes, shared schema/configuration, and server build configuration. The repository now has no unresolved relative imports from `src/App.tsx`.
 
-- npm run dev — Vite development server on port 3000
-- npm run build — frontend production build
-- npm run lint — frontend TypeScript check
-- npm run server:build — backend TypeScript build
-- npm run server:start — compiled backend
-- npm run server:dev — backend watch mode
-- npm run server:compile-run — compile then start backend
-- npm run build:server-launcher — Windows launcher
-- npm run build:developer-ide — Windows developer IDE
-- npm run build:admin-terminal — Windows admin terminal
-
-## Security
-
-- Never commit .env or real credentials.
-- Production requires an explicit 32+ character session secret.
-- Credentialed CORS is allowlisted; arbitrary origin reflection is disabled.
-- Browser local storage is not a security boundary for multiplayer state; authoritative game state belongs on the server/database.
+A GitHub Actions build is used as the authoritative clean-checkout validation after changes are pushed.
