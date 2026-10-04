@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS game_runtime_states(player_id uuid PRIMARY KEY,state jsonb NOT NULL,updated_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS game_market_orders(id uuid PRIMARY KEY,seller_id uuid NOT NULL,resource varchar(32) NOT NULL,amount bigint NOT NULL CHECK(amount>0),unit_price numeric(20,6) NOT NULL CHECK(unit_price>0),status varchar(16) NOT NULL DEFAULT 'open',created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS game_fleet_missions(id uuid PRIMARY KEY,owner_id uuid NOT NULL,target_id uuid,type varchar(32) NOT NULL,payload jsonb NOT NULL,status varchar(16) NOT NULL DEFAULT 'traveling',created_at timestamptz NOT NULL DEFAULT now(),completes_at timestamptz NOT NULL);
+CREATE TABLE IF NOT EXISTS game_battles(id uuid PRIMARY KEY,attacker_id uuid NOT NULL,defender_id uuid,mode varchar(16) NOT NULL,result jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS idx_game_market_open ON game_market_orders(status,created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_game_missions_owner ON game_fleet_missions(owner_id,status);
+CREATE INDEX IF NOT EXISTS idx_game_battles_attacker ON game_battles(attacker_id,created_at DESC);
