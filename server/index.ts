@@ -10,6 +10,7 @@ import { db, isDatabaseReady, shutdownDb } from "./db";
 import { users } from "../shared/schema";
 import { eq, ilike, or, sql } from "drizzle-orm";
 import { registerAdminTerminalRoutes } from "./routes-admin-terminal";
+import { registerCoreGameRoutes } from "./routes-core-game";
 
 const app = express();
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: "draft-8", legacyHeaders: false });
@@ -166,6 +167,7 @@ app.get("/api/auth/me", async (req, res) => {
 });
 
 registerAdminTerminalRoutes(app);
+await registerCoreGameRoutes(app);
 
 app.use(express.static(distDir));
 
