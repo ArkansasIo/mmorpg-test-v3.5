@@ -37,7 +37,7 @@ internal sealed class UpdaterForm : Form
         root.Controls.Add(new Label{Text="UNIVERSE UPDATE / PATCH SYSTEM",AutoSize=true,Font=new Font("Segoe UI",18,FontStyle.Bold),ForeColor=Color.Cyan});
         root.Controls.Add(new Label{Text="Downloads the GitHub main ZIP, stages it, validates it, backs up the installation, then updates all files.",AutoSize=true});
         var row=new FlowLayoutPanel{Width=760,Height=42,WrapContents=false}; row.Controls.Add(new Label{Text="INSTALL FOLDER:",AutoSize=true,Padding=new Padding(0,8,8,0)});
-        install.Text=targetArg ?? AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar); row.Controls.Add(install);
+        install.Text=targetArg ?? Directory.GetParent(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar))?.FullName ?? AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar); row.Controls.Add(install);
         root.Controls.Add(row); root.Controls.Add(progress); root.Controls.Add(update); root.Controls.Add(rollback); root.Controls.Add(log); Controls.Add(root);
         update.Click+=async(_,_)=>await UpdateAsync(); rollback.Click+=async(_,_)=>await RollbackAsync();
     }
