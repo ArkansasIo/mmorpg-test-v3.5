@@ -22,7 +22,7 @@
     "build:exe": "node scripts/generate-pe-exe.cjs && node scripts/validate-exe.cjs",
     "validate:exe": "node scripts/validate-exe.cjs",
     "test:dependency": "tsx scripts/dependency-smoke.ts",
-    "build:admin-terminal": "dotnet publish tools/AdminSystemsTerminal/AdminSystemsTerminal.csproj -c Release",
+    "build:admin-terminal": "dotnet publish tools/AdminSystemsTerminal/AdminSystemsTerminal.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true",
     "build:developer-ide": "dotnet publish tools/UniverseDeveloperIDE/UniverseDeveloperIDE.csproj -c Release",
     "build:server-launcher": "dotnet publish tools/UniverseServerLauncher/UniverseServerLauncher.csproj -c Release",
     "start": "node dist-server/index.js",
