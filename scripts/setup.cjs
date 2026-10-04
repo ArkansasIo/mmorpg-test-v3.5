@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
 /**
- * Full-Stack Automated Setup & Install Orchestrator
- * Performs pre-flight checks, dependency verification, environment creation,
- * builds both server and frontend, and validates launcher executables.
+ * Full-Stack Automated Setup & Install Orchestrator.
+ * Fails closed when required project files or production builds are missing.
  */
 
-const { spawnSync, execSync } = require("node:child_process");
+const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
 const ROOT_DIR = path.resolve(__dirname, "..");
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
 console.log("================================================================");
 console.log(" UNIVERSE CIVILIZATION: EMPIRE AT WAR & BSAT INSTALLER/SETUP");
@@ -19,100 +19,104 @@ console.log(`[INFO] Workspace Root: ${ROOT_DIR}`);
 console.log(`[INFO] Node Version:   ${process.version}`);
 console.log(`[INFO] Architecture:   ${process.arch} (${process.platform})`);
 
-function checkCommand(cmd, args = ["--version"]) {
-  try {
-    const res = spawnSync(cmd, args, { encoding: "utf8", shell: true });
-    return res.status === 0;
-  } catch {
+function run(command, args, label) {
+  console.log(`[RUN] ${label}`);
+  const result = spawnSync(command, args, {
+    cwd: ROOT_DIR,
+    stdio: "inherit",
+    windowsHide: false,
+    shell: false,
+  });
+  if (result.error) {
+    console.error(`[ERROR] ${label}: ${result.error.message}`);
+    return 1;
+  }
+  return result.status ?? 1;
+}
+
+function requireFile(relativePath) {
+  const absolutePath = path.join(ROOT_DIR, relativePath);
+  if (!fs.existsSync(absolutePath)) {
+    console.error(`[ERROR] Required project file is missing: ${relativePath}`);
+    console.error("[ERROR] This local checkout is incomplete or out of date.");
     return false;
   }
+  return true;
 }
 
-// 1. Pre-flight Check
+const requiredFiles = [
+  "package.json",
+  "tsconfig.json",
+  "tsconfig.server.json",
+  "vite.config.ts",
+  "src/App.tsx",
+  "src/main.tsx",
+  "src/cronData.ts",
+  "src/ogameData.ts",
+  "src/adminData.ts",
+  "src/data/ogameAdminData.ts",
+  "server/index.ts",
+];
+
 console.log("\n[STEP 1/5] Checking System Prerequisites...");
-const hasNode = checkCommand("node", ["-v"]);
-const hasNpm = checkCommand("npm", ["-v"]);
-const hasGit = checkCommand("git", ["--version"]);
+if (run(process.execPath, ["-v"], "Node.js runtime") !== 0) process.exit(1);
+if (run(npmCommand, ["-v"], "NPM package manager") !== 0) process.exit(1);
 
-console.log(`  ✓ Node.js Runtime: ${hasNode ? "Available" : "MISSING"}`);
-console.log(`  ✓ NPM Package Mgr: ${hasNpm ? "Available" : "MISSING"}`);
-console.log(`  ✓ Git Versioning:  ${hasGit ? "Available" : "Optional"}`);
-
-if (!hasNode || !hasNpm) {
-  console.error("[CRITICAL] Node.js and NPM are required to run Universe Civilization.");
-  process.exit(1);
+const majorNode = Number(process.versions.node.split(".")[0]);
+if (majorNode < 20 || majorNode > 24) {
+  console.warn(`[WARN] Node.js ${process.version} is outside the supported 20-24 range.`);
+  console.warn("[WARN] Node.js 22 LTS is the recommended development/CI version.");
 }
 
-// 2. Environment Configuration
-console.log("\n[STEP 2/5] Configuring Environment Variables (.env)...");
+console.log("\n[STEP 2/5] Validating Project Files...");
+if (!requiredFiles.every(requireFile)) process.exit(1);
+
+console.log("\n[STEP 3/5] Configuring Environment Variables (.env)...");
 const envFile = path.join(ROOT_DIR, ".env");
 const envExample = path.join(ROOT_DIR, ".env.example");
-
 if (!fs.existsSync(envFile)) {
-  console.log("  → .env not detected. Running automated environment initialization...");
   const envConfigScript = path.join(ROOT_DIR, "scripts", "env-config.cjs");
-  const initRes = spawnSync(process.execPath, [envConfigScript, "init"], { stdio: "inherit" });
-  if (initRes.status !== 0) {
-    console.warn("  ⚠ Warning: env-config init encountered non-zero status. Falling back to copy.");
-    if (fs.existsSync(envExample)) {
-      fs.copyFileSync(envExample, envFile);
-      console.log("  ✓ Created .env from .env.example");
-    }
+  const initStatus = run(process.execPath, [envConfigScript, "init"], "environment initialization");
+  if (initStatus !== 0 && fs.existsSync(envExample)) {
+    fs.copyFileSync(envExample, envFile);
+    console.log("  ✓ Created .env from .env.example");
   }
 } else {
   console.log("  ✓ Verified existing .env file present.");
 }
 
-// 3. Dependency Installation
-console.log("\n[STEP 3/5] Verifying and Installing Dependencies...");
-const nodeModules = path.join(ROOT_DIR, "node_modules");
-if (!fs.existsSync(nodeModules)) {
-  console.log("  → node_modules missing. Running npm install...");
-  const npmRes = spawnSync("npm", ["install"], { cwd: ROOT_DIR, stdio: "inherit", shell: true });
-  if (npmRes.status !== 0) {
-    console.error("[ERROR] Failed to install npm dependencies.");
+console.log("\n[STEP 4/5] Verifying Dependencies and Production Builds...");
+if (!fs.existsSync(path.join(ROOT_DIR, "node_modules"))) {
+  if (run(npmCommand, ["install", "--no-audit", "--no-fund"], "dependency installation") !== 0) {
     process.exit(1);
   }
 } else {
   console.log("  ✓ node_modules directory confirmed present.");
 }
 
-// 4. Compiling Server & Client Builds
-console.log("\n[STEP 4/5] Compiling Game Client & Server Components...");
-console.log("  → Building TypeScript game server...");
-const serverBuildRes = spawnSync("npm", ["run", "server:build"], { cwd: ROOT_DIR, stdio: "inherit", shell: true });
-if (serverBuildRes.status !== 0) {
-  console.warn("  ⚠ Warning: server:build exited with non-zero code. tsx dev runner remains available.");
-} else {
-  console.log("  ✓ Server compiled successfully into dist-server/.");
+if (run(npmCommand, ["run", "server:build"], "TypeScript game server build") !== 0) {
+  console.error("[ERROR] Server build failed.");
+  process.exit(1);
+}
+if (run(npmCommand, ["run", "build"], "Vite client production build") !== 0) {
+  console.error("[ERROR] Client production build failed.");
+  process.exit(1);
+}
+if (run(npmCommand, ["run", "typecheck"], "TypeScript typecheck") !== 0) {
+  console.error("[ERROR] TypeScript typecheck failed.");
+  process.exit(1);
 }
 
-console.log("  → Building client bundle with Vite...");
-const clientBuildRes = spawnSync("npm", ["run", "build"], { cwd: ROOT_DIR, stdio: "inherit", shell: true });
-if (clientBuildRes.status !== 0) {
-  console.warn("  ⚠ Warning: Client production build failed. Vite dev server remains available.");
-} else {
-  console.log("  ✓ Client production bundle built successfully into dist/.");
-}
-
-// 5. Native Windows Launchers Build
-console.log("\n[STEP 5/5] Generating Native Executable Launchers (.exe)...");
+console.log("\n[STEP 5/5] Generating Native Windows Launchers...");
 const exeScript = path.join(ROOT_DIR, "scripts", "generate-pe-exe.cjs");
-if (fs.existsSync(exeScript)) {
-  const exeRes = spawnSync(process.execPath, [exeScript], { cwd: ROOT_DIR, stdio: "inherit" });
-  if (exeRes.status === 0) {
-    console.log("  ✓ Standalone Windows EXE launchers generated successfully.");
-  }
+if (fs.existsSync(exeScript) && run(process.execPath, [exeScript], "Windows launcher generation") !== 0) {
+  console.error("[ERROR] Launcher generation failed.");
+  process.exit(1);
 }
 
 console.log("\n================================================================");
 console.log(" [SUCCESS] UNIVERSE CIVILIZATION SETUP COMPLETED!");
 console.log("================================================================");
-console.log(" Available Launch Commands:");
-console.log("   • Web Dev Server:       npm run dev              (http://localhost:3000)");
-console.log("   • Full-Stack Auto:      npm run start:fullstack");
-console.log("   • Game Server Backend:  npm run server:start    (http://localhost:5001)");
-console.log("   • Configure Env:        npm run config:env");
-console.log("   • Windows Launchers:    install-setup.exe, env-config.exe,");
-console.log("                           launch-fullstack.exe, universe-server.exe");
+console.log(" The server, client production build, and TypeScript checks all passed.");
 console.log("================================================================\n");
+process.exit(0);
