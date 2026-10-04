@@ -1,0 +1,1 @@
+import type { Express } from "express"; import { missingFeatureService } from "./services/missingFeatureService"; export function registerMissingRoutes(app:Express){ app.get("/api/missing/features",(_req,res)=>res.json({ok:true,features:missingFeatureService.list()})); }
