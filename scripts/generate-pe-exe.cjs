@@ -43,7 +43,7 @@ function buildLauncherCode() {
     0xba, 0x01, 0x00, 0x00, 0x00,                   // mov edx, 1 (SW_SHOWNORMAL)
     0xff, 0x15, 0x3a, 0x10, 0x00, 0x00,             // call [rip + 103Ah] -> RVA 2050h
     0x31, 0xc9,                                     // xor ecx, ecx
-    0xff, 0x15, 0x38, 0x10, 0x00, 0x00,             // call [rip + 1038h] -> RVA 2058h
+    0xff, 0x15, 0x3a, 0x10, 0x00, 0x00,             // call [rip + 103Ah] -> RVA 2058h
     0x48, 0x83, 0xc4, 0x28,                         // add rsp, 28h
     0xc3,                                           // ret
   ]);
