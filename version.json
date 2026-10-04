@@ -1,0 +1,8 @@
+{
+  "product": "Universe Civilization Empire at War",
+  "version": "3.5.0",
+  "channel": "stable",
+  "repository": "https://github.com/ArkansasIo/mmorpg-test-v3.5.git",
+  "branch": "main",
+  "minimumUpdaterVersion": "1.0.0"
+}
