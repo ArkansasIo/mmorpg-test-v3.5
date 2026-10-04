@@ -1,0 +1,4 @@
+export interface CombatUnit{hull:number;shield:number;attack:number;accuracy:number;defense:number;}
+export function resolveAttack(a:CombatUnit,d:CombatUnit,r=Math.random){const hit=Math.max(.05,Math.min(.95,a.accuracy/(a.accuracy+d.defense)));if(r()>hit)return{hit:false,damage:0,critical:false};const critical=r()<.1;return{hit:true,damage:Math.max(1,Math.floor(a.attack*(critical?1.75:1))),critical};}
+export function applyDamage(d:CombatUnit,damage:number){const shield=Math.min(d.shield,damage);d.shield-=shield;d.hull-=Math.max(0,damage-shield);return d;}
+export function combatRound(a:CombatUnit,b:CombatUnit){const order=a.attack>=b.attack?[[a,b],[b,a]]:[[b,a],[a,b]];const events=[];for(const [x,y] of order){const result=resolveAttack(x,y);if(result.hit)applyDamage(y,result.damage);events.push({attacker:x,target:y,result});if(y.hull<=0)break;}return{events,winner:a.hull>0&&b.hull<=0?"attacker":b.hull>0&&a.hull<=0?"defender":"undecided"};}
