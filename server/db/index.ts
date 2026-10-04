@@ -5,10 +5,8 @@ import * as schema from "../../shared/schema";
 
 const databaseUrl = process.env.DATABASE_URL || process.env.LOCAL_DATABASE_URL || "";
 
-if (!databaseUrl.trim()) {
-  console.error("❌ DATABASE_URL is not configured.");
-  console.error("   Copy .env.example to .env and set DATABASE_URL to your PostgreSQL connection string.");
-  console.error("   Example: postgresql://postgres:YOUR_PASSWORD@localhost:5432/universe_civilization");
+if (!databaseUrl.trim() || databaseUrl.includes("YOUR_PASSWORD")) {
+  throw new Error("DATABASE_URL is not configured. Copy .env.example to .env and set a real PostgreSQL connection string.");
 }
 
 function describeDatabaseTarget(connectionString: string): string {
@@ -38,7 +36,7 @@ console.log("🔌 Connecting to database...");
 console.log(`   Target: ${describeDatabaseTarget(databaseUrl)}`);
 
 export const pool = new Pool({
-  connectionString: databaseUrl || undefined,
+  connectionString: databaseUrl,
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: Number.parseInt(process.env.DB_IDLE_TIMEOUT_MS || "30000", 10),
   max: Number.parseInt(process.env.DB_POOL_MAX || "10", 10),
