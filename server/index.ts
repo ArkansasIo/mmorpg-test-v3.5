@@ -167,9 +167,11 @@ app.get("/api/auth/me", async (req, res) => {
 });
 
 registerAdminTerminalRoutes(app);
-registerCoreGameRoutes(app).then(() => {
 
-app.use(express.static(distDir));
+async function bootstrap() {
+  await registerCoreGameRoutes(app);
+
+  app.use(express.static(distDir));
 
 app.get("*", (req, res, next) => {
   if (req.path.startsWith("/api/")) return next();
@@ -221,5 +223,12 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 }).catch((error) => {
   console.error("Failed to initialize core game routes:", error);
+  process.exitCode = 1;
+});
+
+}
+
+void bootstrap().catch((error) => {
+  console.error("Failed to initialize server:", error);
   process.exitCode = 1;
 });
