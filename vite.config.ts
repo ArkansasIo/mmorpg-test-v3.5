@@ -1,9 +1,10 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import {fileURLToPath} from 'url';
 import {defineConfig} from 'vite';
 
-export default defineConfig(() => {
+const __filename = fileURLToPath(import.meta.url);\nconst __dirname = path.dirname(__filename);\n\nexport default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
