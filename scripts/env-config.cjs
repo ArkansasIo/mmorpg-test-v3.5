@@ -144,15 +144,15 @@ const PRESETS = {
     values: {
       PORT: "5001",
       NODE_ENV: "development",
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/universe_civilization",
+      DATABASE_URL: "",
       CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000",
       APP_URL: "http://localhost:3000",
       VITE_PORT: "3000",
       DEV_AUTH_BYPASS: "true",
       ADMIN_BOOTSTRAP_USERNAME: "admin",
       ADMIN_BOOTSTRAP_EMAIL: "admin@universe.local",
-      ADMIN_BOOTSTRAP_PASSWORD: "EmpireAtWar2026!",
-      ADMIN_SECURITY_CODE: "0000",
+      ADMIN_BOOTSTRAP_PASSWORD: "",
+      ADMIN_SECURITY_CODE: "",
     },
   },
   production_standalone: {
