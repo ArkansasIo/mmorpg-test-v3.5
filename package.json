@@ -1,7 +1,7 @@
 {
-  "name": "react-example",
+  "name": "universe-civilization-empire-at-war",
   "private": true,
-  "version": "0.0.0",
+  "version": "3.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -24,7 +24,10 @@
     "test:dependency": "tsx scripts/dependency-smoke.ts",
     "build:admin-terminal": "dotnet publish tools/AdminSystemsTerminal/AdminSystemsTerminal.csproj -c Release",
     "build:developer-ide": "dotnet publish tools/UniverseDeveloperIDE/UniverseDeveloperIDE.csproj -c Release",
-    "build:server-launcher": "dotnet publish tools/UniverseServerLauncher/UniverseServerLauncher.csproj -c Release"
+    "build:server-launcher": "dotnet publish tools/UniverseServerLauncher/UniverseServerLauncher.csproj -c Release",
+    "start": "node dist-server/index.js",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run build && npm run server:build"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
