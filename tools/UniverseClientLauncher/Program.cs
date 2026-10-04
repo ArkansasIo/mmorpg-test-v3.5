@@ -1,56 +1,26 @@
 using System.Diagnostics;
 
-static string Root() => Path.GetFullPath(AppContext.BaseDirectory);
-
-static void ShowError(string message) =>
-    MessageBox.Show(message, "Universe Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-static bool CommandExists(string command)
+static string FindRoot()
 {
-    try
-    {
-        using var p = Process.Start(new ProcessStartInfo
-        {
-            FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-            Arguments = $"/c where {command}",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        });
-        p?.WaitForExit(5000);
-        return p?.ExitCode == 0;
-    }
-    catch { return false; }
+    var dir=new DirectoryInfo(AppContext.BaseDirectory);
+    for(var i=0;i<8 && dir!=null;i++,dir=dir.Parent)
+        if(File.Exists(Path.Combine(dir.FullName,"package.json")) && Directory.Exists(Path.Combine(dir.FullName,"src")))
+            return dir.FullName;
+    return AppContext.BaseDirectory;
 }
-
-var root = Root();
-var package = Path.Combine(root, "package.json");
-
-try
-{
-    if (!File.Exists(package))
-    {
-        ShowError($"package.json was not found.\n\nExpected:\n{package}\n\nPut UniverseClient.exe in the MMORPG project root.");
+static void Error(string m)=>MessageBox.Show(m,"Universe Client",MessageBoxButtons.OK,MessageBoxIcon.Error);
+var root=FindRoot();
+try{
+    if(!File.Exists(Path.Combine(root,"package.json"))||!Directory.Exists(Path.Combine(root,"src"))){
+        Error($"Universe project root was not found.\n\nLauncher: {AppContext.BaseDirectory}");
         return;
     }
-
-    if (!CommandExists("node") || !CommandExists("npm"))
-    {
-        ShowError("Node.js and npm are required. Install Node.js 20-24, then start UniverseClient.exe again.");
-        return;
-    }
-
-    var psi = new ProcessStartInfo
-    {
-        FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-        Arguments = "/k npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 3000",
-        WorkingDirectory = root,
-        UseShellExecute = true
-    };
-    Process.Start(psi);
-}
-catch (Exception ex)
-{
-    ShowError($"Universe Client could not start.\n\n{ex.Message}");
-}
+    var cmd=Environment.GetEnvironmentVariable("ComSpec")??"cmd.exe";
+    var p=Process.Start(new ProcessStartInfo{
+        FileName=cmd,
+        Arguments="/c npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 3000",
+        WorkingDirectory=root,
+        UseShellExecute=true
+    });
+    if(p==null)Error("Could not start the Universe client.");
+}catch(Exception ex){Error($"Universe Client could not start.\n\n{ex.Message}");}
