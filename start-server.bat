@@ -2,18 +2,18 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-title BSAT TypeScript to Node.js Server Supervisor
+title Universe Civilization TypeScript Node.js Server Supervisor
 color 0A
 
 echo ============================================================================
-echo   [BSAT] TypeScript to Node.js Auto-Compiler and Server Supervisor
+echo   [UNIVERSE] TypeScript Node.js Server Supervisor
 echo ============================================================================
 
 where node >nul 2>nul
 if errorlevel 1 (
     color 0C
     echo [ERROR] Node.js is not found in PATH.
-    echo Please install Node.js and restart this terminal.
+    echo Please install Node.js 20-24 and restart this terminal.
     pause
     exit /b 1
 )
@@ -23,7 +23,7 @@ echo [OK] Detected Node.js: !NODE_VERSION!
 
 if not exist "node_modules\.bin\tsc.cmd" (
     echo [*] Installing dependencies...
-    call npm install
+    call npm install --no-audit --no-fund
     if errorlevel 1 (
         color 0C
         echo [ERROR] npm install failed.
@@ -34,6 +34,18 @@ if not exist "node_modules\.bin\tsc.cmd" (
 
 :COMPILE_STEP
 echo.
+echo [*] Cleaning previous generated server output...
+if exist "dist-server" (
+    rmdir /s /q "dist-server"
+    if exist "dist-server" (
+        color 0C
+        echo [ERROR] Could not remove the old dist-server directory.
+        echo [ERROR] Close any running Node.js process using dist-server and retry.
+        pause
+        exit /b 1
+    )
+)
+
 echo [*] Compiling TypeScript server...
 if not exist "tsconfig.server.json" (
     color 0C
@@ -41,7 +53,7 @@ if not exist "tsconfig.server.json" (
     exit /b 1
 )
 
-call "node_modules\.bin\tsc.cmd" -p "tsconfig.server.json"
+call "node_modules\.bin\tsc.cmd" -p "tsconfig.server.json" --pretty false
 if errorlevel 1 (
     color 0C
     echo.
@@ -51,7 +63,22 @@ if errorlevel 1 (
     goto COMPILE_STEP
 )
 
-echo [OK] TypeScript compilation succeeded.
+if not exist "dist-server\index.js" (
+    color 0C
+    echo [ERROR] Compilation reported success but dist-server/index.js was not generated.
+    exit /b 1
+)
+
+echo [*] Validating generated JavaScript...
+node --check "dist-server\index.js"
+if errorlevel 1 (
+    color 0C
+    echo [ERROR] Generated server JavaScript failed Node.js syntax validation.
+    echo [ERROR] The generated file is not executable JavaScript.
+    exit /b 1
+)
+
+echo [OK] TypeScript compilation and Node.js syntax validation succeeded.
 
 rem The Vite client uses port 3000 by default. Keep the Node API on 5001 unless the caller explicitly supplied PORT.
 if not defined PORT set "PORT=5001"
@@ -68,6 +95,7 @@ if defined PORT_PID (
     pause
     exit /b 2
 )
+
 set "RESTART_COUNT=0"
 set "MAX_RAPID_CRASHES=5"
 
