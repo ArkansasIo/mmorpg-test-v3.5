@@ -116,8 +116,12 @@ export function getSession() {
   const isDevelopment = process.env.NODE_ENV === "development";
   
   return session({
-    name: 'connect.sid',
-    secret: (() => { const secret = process.env.SESSION_SECRET?.trim(); if (!secret || secret.length < 32) { if (process.env.NODE_ENV === "production") throw new Error("SESSION_SECRET must be at least 32 characters in production"); return crypto.randomBytes(32).toString("hex"); } return secret; })(),
+    name: 'uc.sid',
+    secret: (() => { const secret = process.env.SESSION_SECRET?.trim(); if (!secret || secret.length < 32) {
+      if (process.env.NODE_ENV === "production") throw new Error("SESSION_SECRET must be at least 32 characters in production");
+      return crypto.randomBytes(32).toString("hex");
+    }
+    return secret; })(),
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
@@ -536,6 +540,7 @@ export async function setupAuth(app: Express) {
       // ── Security code verification ──────────────────────────────
       const isDev = process.env.NODE_ENV === "development";
       const expectedCode = String(process.env.ADMIN_SECURITY_CODE || "").trim();
+      if (!isDev && !expectedCode) return res.status(503).json({ message: "Admin security code is not configured" });
 
       if (expectedCode) {
         if (!securityCode) {
