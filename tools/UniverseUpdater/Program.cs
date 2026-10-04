@@ -35,7 +35,7 @@ internal static class Program
         Directory.CreateDirectory(dir);
         var copy=Path.Combine(dir,"UniverseUpdater.exe");
         File.Copy(Environment.ProcessPath!,copy,true);
-        var psi=new ProcessStartInfo(copy, $""{target}"") { UseShellExecute=true, WorkingDirectory=target };
+        var psi=new ProcessStartInfo(copy, $"\\"{target}\\"") { UseShellExecute=true, WorkingDirectory=target };
         Process.Start(psi);
     }
 }
