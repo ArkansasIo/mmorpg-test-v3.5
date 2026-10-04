@@ -155,6 +155,7 @@ import { StellarEncyclopediaView } from './components/views/StellarEncyclopediaV
 import { StargateNpcRacesView } from './components/views/StargateNpcRacesView';
 import { StargateSystemLordsPvEView } from './components/views/StargateSystemLordsPvEView';
 import { AdminControlPanelView } from './components/views/AdminControlPanelView';
+import { AdminSystemsTerminalView } from './components/views/AdminSystemsTerminalView';
 import { ShipFittingView } from './components/views/ShipFittingView';
 import { CivilizationView } from './components/views/CivilizationView';
 import { GovernmentSystemView } from './components/views/GovernmentSystemView';
@@ -3313,6 +3314,12 @@ export default function App() {
             {(activeRoute === 'env-config' || activeRoute === 'server-config') && (
               <div className="w-full">
                 <EnvironmentConfigSystemView />
+              </div>
+            )}
+
+            {activeRoute === 'admin-terminal' && isAdminUser && (
+              <div className="w-full">
+                <AdminSystemsTerminalView />
               </div>
             )}
 
