@@ -56,6 +56,18 @@ echo [OK] TypeScript compilation succeeded.
 rem The Vite client uses port 3000 by default. Keep the Node API on 5001 unless the caller explicitly supplied PORT.
 if not defined PORT set "PORT=5001"
 echo [CONFIG] Node API PORT=!PORT!
+
+rem Fail clearly instead of entering an auto-restart loop when the API port is already occupied.
+set "PORT_PID="
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":!PORT! .*LISTENING"') do set "PORT_PID=%%P"
+if defined PORT_PID (
+    color 0C
+    echo [ERROR] Port !PORT! is already in use by PID !PORT_PID!.
+    echo [ERROR] Stop that process or choose another PORT before starting the server.
+    echo [INFO] Windows command: taskkill /PID !PORT_PID! /F
+    pause
+    exit /b 2
+)
 set "RESTART_COUNT=0"
 set "MAX_RAPID_CRASHES=5"
 
