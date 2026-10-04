@@ -167,7 +167,7 @@ app.get("/api/auth/me", async (req, res) => {
 });
 
 registerAdminTerminalRoutes(app);
-await registerCoreGameRoutes(app);
+registerCoreGameRoutes(app).then(() => {
 
 app.use(express.static(distDir));
 
@@ -218,3 +218,8 @@ const shutdown = async (signal: string) => {
 };
 process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
+
+}).catch((error) => {
+  console.error("Failed to initialize core game routes:", error);
+  process.exitCode = 1;
+});
