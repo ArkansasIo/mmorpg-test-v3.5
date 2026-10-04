@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "version": "3.5.0",
+  "channel": "stable",
+  "archive": "https://github.com/ArkansasIo/mmorpg-test-v3.5/archive/refs/heads/main.zip",
+  "repository": "https://github.com/ArkansasIo/mmorpg-test-v3.5.git",
+  "branch": "main",
+  "notes": "Full repository update from main"
+}
