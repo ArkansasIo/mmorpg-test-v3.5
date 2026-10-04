@@ -6,6 +6,7 @@ import { executeAdminCommand, getAdminMenu, requireTerminalAdmin } from "./servi
 function fail(res:Response,error:unknown){const e=error as {status?:number;message?:string};res.status(e.status||500).json({ok:false,message:e.message||"Admin terminal request failed"});}
 
 export function registerAdminTerminalRoutes(app:Express){
+  app.get("/api/admin/dashboard",async(req:Request,res:Response)=>{try{const auth=await requireTerminalAdmin(req,"view_only");const status=await executeAdminCommand(auth.userId,"status",{});res.json({ok:true,role:auth.role,permissions:auth.permissions,menu:getAdminMenu(auth.permissions),status});}catch(e){fail(res,e);}});
  app.get("/api/admin/terminal/menu",async(req:Request,res:Response)=>{
   try{const auth=await requireTerminalAdmin(req,"view_only");res.json({ok:true,role:auth.role,menu:getAdminMenu(auth.permissions)});}
   catch(e){fail(res,e);}
