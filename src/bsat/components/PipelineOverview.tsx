@@ -42,7 +42,7 @@ export const PipelineOverview: React.FC<PipelineOverviewProps> = ({ onNavigate }
     {
       num: '05',
       title: 'HTTP Port & Health Probe',
-      subtitle: 'http://localhost:3000/api/health',
+      subtitle: 'http://localhost:5001/api/status/health',
       desc: 'Exposes telemetry, memory statistics, and uptime probes for automated uptime guarantees.',
       icon: ShieldCheck,
       accent: 'text-teal-400 border-teal-500/20 bg-teal-500/10',
