@@ -38,7 +38,7 @@ console.log("🔌 Connecting to database...");
 console.log(`   Target: ${describeDatabaseTarget(databaseUrl)}`);
 
 export const pool = new Pool({
-  connectionString: databaseUrl,
+  connectionString: databaseUrl || undefined,
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: Number.parseInt(process.env.DB_IDLE_TIMEOUT_MS || "30000", 10),
   max: Number.parseInt(process.env.DB_POOL_MAX || "10", 10),
