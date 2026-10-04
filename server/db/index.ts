@@ -3,10 +3,13 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../../shared/schema";
 
-const databaseUrl =
-  process.env.DATABASE_URL ||
-  process.env.LOCAL_DATABASE_URL ||
-  "postgresql://postgres@localhost:5432/universe_civilization";
+const databaseUrl = process.env.DATABASE_URL || process.env.LOCAL_DATABASE_URL || "";
+
+if (!databaseUrl.trim()) {
+  console.error("❌ DATABASE_URL is not configured.");
+  console.error("   Copy .env.example to .env and set DATABASE_URL to your PostgreSQL connection string.");
+  console.error("   Example: postgresql://postgres:YOUR_PASSWORD@localhost:5432/universe_civilization");
+}
 
 function describeDatabaseTarget(connectionString: string): string {
   try {
