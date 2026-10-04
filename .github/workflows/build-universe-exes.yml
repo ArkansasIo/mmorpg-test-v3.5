@@ -7,13 +7,17 @@ on:
     paths:
       - "tools/UniverseServerLauncher/**"
       - "tools/UniverseClientLauncher/**"
+      - "server/**"
+      - "src/**"
+      - "shared/**"
       - "start-server.bat"
       - "package.json"
       - "package-lock.json"
+      - "tsconfig.server.json"
       - ".github/workflows/build-universe-exes.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -21,8 +25,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript server build
+        run: npm run server:build
+
+      - name: Validate generated server JavaScript
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist-server/index.js")) { throw "dist-server/index.js was not generated." }
+          node --check "dist-server/index.js"
+          Write-Host "Server JavaScript syntax check passed."
+
+      - name: Frontend build
+        run: npm run build
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -35,55 +59,75 @@ jobs:
       - name: Build Universe Client EXE
         run: dotnet publish tools/UniverseClientLauncher/UniverseClientLauncher.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 
-      - name: Replace repository launcher binaries
-        shell: pwsh
-        run: |
-          Copy-Item "tools/UniverseServerLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseServer.exe" "universe-server.exe" -Force
-          Copy-Item "tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe" "universe-client.exe" -Force
-
       - name: Validate native PE binaries
         shell: pwsh
         run: |
-          $server = Get-Item "universe-server.exe"
-          $client = Get-Item "universe-client.exe"
-          if ($server.Length -lt 1000000) { throw "universe-server.exe is unexpectedly small: $($server.Length) bytes" }
-          if ($client.Length -lt 1000000) { throw "universe-client.exe is unexpectedly small: $($client.Length) bytes" }
-          Write-Host "UniverseServer.exe: $($server.Length) bytes"
-          Write-Host "UniverseClient.exe: $($client.Length) bytes"
+          $files = @(
+            "tools/UniverseServerLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseServer.exe",
+            "tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe"
+          )
+          foreach ($path in $files) {
+            $file = Get-Item $path
+            if ($file.Length -lt 1000000) { throw "$path is unexpectedly small: $($file.Length) bytes" }
+            $bytes = [IO.File]::ReadAllBytes($path)
+            if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { throw "$path is not an MZ/PE executable" }
+            Write-Host "$path : $($file.Length) bytes"
+          }
 
-      - name: Assemble portable runtime packages
+      - name: Smoke test Server EXE
+        shell: pwsh
+        run: |
+          $root = (Get-Location).Path
+          $exe = (Resolve-Path "tools/UniverseServerLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseServer.exe").Path
+          Copy-Item $exe "$root/UniverseServer-test.exe" -Force
+          $p = Start-Process "$root/UniverseServer-test.exe" -WorkingDirectory $root -PassThru
+          Start-Sleep -Seconds 4
+          if ($p.HasExited) {
+            if ($p.ExitCode -ne 0) { throw "UniverseServer.exe exited with code $($p.ExitCode)" }
+            Write-Host "UniverseServer.exe exited cleanly during smoke test."
+          } else {
+            Stop-Process -Id $p.Id -Force
+            Write-Host "UniverseServer.exe launched successfully."
+          }
+          Remove-Item "$root/UniverseServer-test.exe" -Force -ErrorAction SilentlyContinue
+
+      - name: Smoke test Client EXE
+        shell: pwsh
+        run: |
+          $root = (Get-Location).Path
+          $exe = (Resolve-Path "tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe").Path
+          Copy-Item $exe "$root/UniverseClient-test.exe" -Force
+          $p = Start-Process "$root/UniverseClient-test.exe" -WorkingDirectory $root -PassThru
+          Start-Sleep -Seconds 4
+          if ($p.HasExited) {
+            if ($p.ExitCode -ne 0) { throw "UniverseClient.exe exited with code $($p.ExitCode)" }
+            Write-Host "UniverseClient.exe exited cleanly during smoke test."
+          } else {
+            Stop-Process -Id $p.Id -Force
+            Write-Host "UniverseClient.exe launched successfully."
+          }
+          Remove-Item "$root/UniverseClient-test.exe" -Force -ErrorAction SilentlyContinue
+
+      - name: Assemble runtime packages
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release/UniverseServer,release/UniverseClient | Out-Null
-          Copy-Item universe-server.exe release/UniverseServer/
-          Copy-Item universe-client.exe release/UniverseClient/
+          Copy-Item "tools/UniverseServerLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseServer.exe" "release/UniverseServer/UniverseServer.exe"
+          Copy-Item "tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe" "release/UniverseClient/UniverseClient.exe"
           Copy-Item start-server.bat release/UniverseServer/
           Copy-Item package.json release/UniverseClient/
           Copy-Item package-lock.json release/UniverseClient/ -ErrorAction SilentlyContinue
           Compress-Archive -Path release/UniverseServer/* -DestinationPath release/UniverseServer-win-x64.zip -Force
           Compress-Archive -Path release/UniverseClient/* -DestinationPath release/UniverseClient-win-x64.zip -Force
 
-      - name: Upload Universe Server EXE package
+      - name: Upload Universe Server package
         uses: actions/upload-artifact@v4
         with:
           name: UniverseServer-win-x64
           path: release/UniverseServer-win-x64.zip
 
-      - name: Upload Universe Client EXE package
+      - name: Upload Universe Client package
         uses: actions/upload-artifact@v4
         with:
           name: UniverseClient-win-x64
           path: release/UniverseClient-win-x64.zip
-
-      - name: Commit rebuilt EXEs to main
-        shell: pwsh
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add universe-server.exe universe-client.exe
-          if (git diff --cached --quiet) {
-            Write-Host "No launcher binary changes to commit."
-            exit 0
-          }
-          git commit -m "build: rebuild Universe server and client Windows launchers"
-          git push origin HEAD:main
