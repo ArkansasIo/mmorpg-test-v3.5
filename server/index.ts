@@ -11,6 +11,8 @@ import { users } from "../shared/schema";
 import { eq, ilike, or, sql } from "drizzle-orm";
 import { registerAdminTerminalRoutes } from "./routes-admin-terminal";
 import { registerCoreGameRoutes } from "./routes-core-game";
+import { registerCronRoutes } from "./routes-cron";
+import { startCronEngine, stopCronEngine } from "./services/cronEngine";
 
 const app = express();
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: "draft-8", legacyHeaders: false });
@@ -167,9 +169,11 @@ app.get("/api/auth/me", async (req, res) => {
 });
 
 registerAdminTerminalRoutes(app);
+registerCronRoutes(app);
 
 async function bootstrap() {
   await registerCoreGameRoutes(app);
+  startCronEngine();
 
   app.use(express.static(distDir));
 
@@ -213,6 +217,7 @@ server.on("error", (error: NodeJS.ErrnoException) => {
 
 const shutdown = async (signal: string) => {
   console.log("Received " + signal + "; shutting down...");
+  stopCronEngine();
   server.close(async () => {
     await shutdownDb();
     process.exit(0);
