@@ -1,0 +1,1 @@
+export function requireUserId(req:any):string{const id=req.user?.id??req.session?.userId;if(!id)throw new Error("Authentication required");return String(id)} export function requireOwnership(ownerId:string,userId:string){if(ownerId!==userId)throw new Error("Resource ownership violation");return true}

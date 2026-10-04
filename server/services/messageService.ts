@@ -1,0 +1,3 @@
+export interface GameMessage { id:string; senderId:string; recipientId:string; subject:string; body:string; read:boolean; createdAt:string }
+export class MessageService { private messages=new Map<string,GameMessage>(); list(userId:string){return [...this.messages.values()].filter(m=>m.senderId===userId||m.recipientId===userId).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));} send(input:Omit<GameMessage,"id"|"read"|"createdAt">){const m={id:crypto.randomUUID(),...input,read:false,createdAt:new Date().toISOString()};this.messages.set(m.id,m);return m;} markRead(id:string,userId:string){const m=this.messages.get(id);if(!m||m.recipientId!==userId)return null;m.read=true;return m;} }
+export const messageService=new MessageService();

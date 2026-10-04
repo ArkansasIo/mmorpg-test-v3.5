@@ -1,0 +1,4 @@
+export type FeatureStatus = "planned" | "partial" | "implemented";
+export interface FeatureRecord { id:string; name:string; status:FeatureStatus; description:string; updatedAt:string; }
+const records = new Map<string, FeatureRecord>();
+export const missingFeatureService = { register(feature: Omit<FeatureRecord,"updatedAt">){ const r={...feature,updatedAt:new Date().toISOString()}; records.set(r.id,r); return r; }, list(){ return [...records.values()]; }, get(id:string){ return records.get(id) ?? null; }, markImplemented(id:string){ const r=records.get(id); if(!r)return null; const next={...r,status:"implemented" as const,updatedAt:new Date().toISOString()}; records.set(id,next); return next; } };
