@@ -1,0 +1,7 @@
+export type ResourceKey="metal"|"crystal"|"naquadah"|"energy"|"darkMatter"|"food"|"water"|"population";export type ResourceVector=Record<ResourceKey,number>;
+export const RESOURCE_KEYS:ResourceKey[]=["metal","crystal","naquadah","energy","darkMatter","food","water","population"];
+export const add=(a:Partial<ResourceVector>,b:Partial<ResourceVector>):ResourceVector=>Object.fromEntries(RESOURCE_KEYS.map(k=>[k,Math.max(0,(a[k]||0)+(b[k]||0))])) as ResourceVector;
+export const canAfford=(a:Partial<ResourceVector>,c:Partial<ResourceVector>)=>RESOURCE_KEYS.every(k=>(a[k]||0)>=(c[k]||0));
+export const scaleCost=(b:Partial<ResourceVector>,level:number,rate=1.5):ResourceVector=>Object.fromEntries(RESOURCE_KEYS.map(k=>[k,Math.ceil((b[k]||0)*Math.pow(rate,Math.max(0,level-1)))])) as ResourceVector;
+export const productionPerHour=(b:Record<string,number>,r:Record<string,number>)=>({metal:(b.metalMine||0)*30*(1+(r.mining||0)*.05),crystal:(b.crystalMine||0)*15*(1+(r.mining||0)*.05),naquadah:(b.naquadahRefinery||0)*8*(1+(r.naquadah||0)*.05),food:(b.foodHydroponics||0)*20,water:(b.waterPurifier||0)*20});
+export const fleetPower=(f:Record<string,{count:number}>,c:Record<string,{attack:number;hull:number;shield:number}>)=>Object.entries(f).reduce((p,[id,u])=>{const d=c[id];return d?{attack:p.attack+d.attack*u.count,hull:p.hull+d.hull*u.count,shield:p.shield+d.shield*u.count}:p},{attack:0,hull:0,shield:0});
