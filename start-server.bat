@@ -52,6 +52,10 @@ if errorlevel 1 (
 )
 
 echo [OK] TypeScript compilation succeeded.
+
+rem The Vite client uses port 3000 by default. Keep the Node API on 5001 unless the caller explicitly supplied PORT.
+if not defined PORT set "PORT=5001"
+echo [CONFIG] Node API PORT=!PORT!
 set "RESTART_COUNT=0"
 set "MAX_RAPID_CRASHES=5"
 
