@@ -174,8 +174,8 @@ const PRESETS = [
       CORS_ORIGINS: 'http://localhost:3000,http://127.0.0.1:3000',
       APP_URL: 'http://localhost:3000',
       VITE_PORT: '3000',
-      DEV_AUTH_BYPASS: 'true',
-      ADMIN_SECURITY_CODE: '0000',
+      DEV_AUTH_BYPASS: 'false',
+      ADMIN_SECURITY_CODE: '',
     },
   },
   {
