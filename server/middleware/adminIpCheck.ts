@@ -19,18 +19,10 @@ const ADMIN_LOGIN_DISABLED = process.env.ADMIN_LOGIN_DISABLED === "true";
  * Get the client's IP address from the request
  */
 function getClientIp(req: Request): string {
-  // Check common proxy headers
-  const forwarded = req.headers["x-forwarded-for"];
-  if (forwarded) {
-    const ips = Array.isArray(forwarded) ? forwarded[0] : forwarded;
-    return ips.split(",")[0].trim();
-  }
-
-  return (
-    req.socket.remoteAddress ||
-    req.connection.remoteAddress ||
-    "unknown"
-  );
+  // Express computes req.ip from the socket and trusted proxy configuration.
+  // Do not parse X-Forwarded-For directly; clients can spoof it when no trusted
+  // reverse proxy is configured.
+  return req.ip || req.socket.remoteAddress || "unknown";
 }
 
 /**
@@ -55,7 +47,6 @@ export function requireAdminIp(req: Request, res: Response, next: NextFunction):
     console.warn(`⚠️ [ADMIN] Unauthorized admin login attempt from IP: ${clientIp}`);
     res.status(403).json({
       message: "Admin access is restricted by IP",
-      clientIp: ipV4,
     });
     return;
   }
