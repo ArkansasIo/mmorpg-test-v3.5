@@ -28,7 +28,9 @@
     "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run build && npm run server:build && npm run test:dependency",
-    "start:fullstack:win": "start-fullstack.bat"
+    "start:fullstack:win": "start-fullstack.bat",
+    "build:updater": "dotnet publish tools/UniverseUpdater/UniverseUpdater.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true",
+    "build:admin-suite": "npm run build:admin-terminal && npm run build:updater"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
