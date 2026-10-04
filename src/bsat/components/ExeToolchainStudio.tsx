@@ -40,7 +40,7 @@ export const ExeToolchainStudio: React.FC = () => {
     { time: '14:55:03', text: '[SUPERVISOR] Node.js runtime environment verified (v22.23.2)', type: 'ok' },
     { time: '14:55:04', text: '[COMPILER] Compiling server/index.ts -> dist-server/index.js...', type: 'info' },
     { time: '14:55:05', text: '[OK] TypeScript compilation succeeded with 0 errors.', type: 'ok' },
-    { time: '14:55:06', text: '🚀 [HTTP SERVER] Live on http://localhost:3000 (PID: 84920)', type: 'ok' },
+    { time: '14:55:06', text: '🚀 [HTTP SERVER] Live on http://localhost:5001 (PID: 84920)', type: 'ok' },
   ]);
 
   const addSimLog = (text: string, type: 'info' | 'ok' | 'warn' | 'error' = 'info') => {
@@ -403,7 +403,7 @@ export const ExeToolchainStudio: React.FC = () => {
               <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
                 <div className="font-semibold text-emerald-400">1. Instant Double-Click</div>
                 <p className="text-slate-400 leading-relaxed">
-                  Download <code className="text-white font-mono">bsat-studio.exe</code> and double-click. It will launch the console supervisor, compile TypeScript, and open port 3000.
+                  Download <code className="text-white font-mono">bsat-studio.exe</code> and double-click. It will launch the console supervisor, compile TypeScript, and open the backend API on port 5001.
                 </p>
               </div>
 
