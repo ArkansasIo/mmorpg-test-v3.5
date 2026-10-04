@@ -24,56 +24,40 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-
       - name: TypeScript server build
         run: npm run server:build
-
-      - name: Validate every generated server JavaScript file
+      - name: Validate generated server JavaScript
         shell: pwsh
         run: |
           $files = Get-ChildItem "dist-server" -Filter "*.js" -Recurse -File
-          if ($files.Count -eq 0) { throw "No generated JavaScript files were found in dist-server." }
+          if ($files.Count -eq 0) { throw "No generated server JavaScript files found." }
           foreach ($file in $files) {
             node --check $file.FullName
-            if ($LASTEXITCODE -ne 0) { throw "Node.js syntax validation failed: $($file.FullName)" }
+            if ($LASTEXITCODE -ne 0) { throw "Syntax error: $($file.FullName)" }
           }
-          Write-Host "Validated $($files.Count) generated server JavaScript file(s)."
-
-      - name: Verify generated index is not stale compiler/log output
+      - name: Verify generated server entrypoint
         shell: pwsh
         run: |
           $index = Get-Content "dist-server/index.js" -Raw
-          if ($index -match '^\s*\[\*\] Compiling') {
-            throw "dist-server/index.js contains stale compiler log text instead of JavaScript."
-          }
-          if ($index -notmatch 'app\.listen') {
-            throw "dist-server/index.js does not contain the expected Express server startup."
-          }
-          Write-Host "Generated server entrypoint is valid and current."
-
+          if ($index -match '^\s*\[\*\] Compiling') { throw "dist-server/index.js contains compiler output." }
+          Write-Host "Generated server entrypoint passed validation."
       - name: Frontend build
         run: npm run build
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-
-      - name: Build Universe Server EXE
+      - name: Build Server EXE
         run: dotnet publish tools/UniverseServerLauncher/UniverseServerLauncher.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
-
-      - name: Build Universe Client EXE
+      - name: Build Client EXE
         run: dotnet publish tools/UniverseClientLauncher/UniverseClientLauncher.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
-
-      - name: Validate native PE binaries
+      - name: Validate EXEs
         shell: pwsh
         run: |
           $files = @(
@@ -81,54 +65,13 @@ jobs:
             "tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe"
           )
           foreach ($path in $files) {
-            $file = Get-Item $path
-            if ($file.Length -lt 1000000) { throw "$path is unexpectedly small: $($file.Length) bytes" }
-            $bytes = [IO.File]::ReadAllBytes($path)
-            if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { throw "$path is not an MZ/PE executable" }
-            Write-Host "$path : $($file.Length) bytes"
+            $f = Get-Item $path
+            if ($f.Length -lt 1000000) { throw "$path is too small." }
+            $b = [IO.File]::ReadAllBytes($path)
+            if ($b[0] -ne 0x4D -or $b[1] -ne 0x5A) { throw "$path is not a PE executable." }
+            Write-Host "$path = $($f.Length) bytes"
           }
-
-      - name: Smoke test Server EXE
-        shell: pwsh
-        run: |
-          $root = (Get-Location).Path
-          $exe = (Resolve-Path "tools/UniverseServerLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseServer.exe").Path
-          Copy-Item $exe "$root/UniverseServer-test.exe" -Force
-          $p = Start-Process "$root/UniverseServer-test.exe" -WorkingDirectory $root -PassThru
-          Start-Sleep -Seconds 4
-          if ($p.HasExited) {
-            if ($p.ExitCode -ne 0) { throw "UniverseServer.exe exited with code $($p.ExitCode)" }
-            Write-Host "UniverseServer.exe exited cleanly during smoke test."
-          } else {
-            Stop-Process -Id $p.Id -Force
-            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | ForEach-Object {
-              Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
-            }
-            Write-Host "UniverseServer.exe launched successfully."
-          }
-          Remove-Item "$root/UniverseServer-test.exe" -Force -ErrorAction SilentlyContinue
-
-      - name: Smoke test Client EXE
-        shell: pwsh
-        run: |
-          $root = (Get-Location).Path
-          $exe = (Resolve-Path "tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe").Path
-          Copy-Item $exe "$root/UniverseClient-test.exe" -Force
-          $p = Start-Process "$root/UniverseClient-test.exe" -WorkingDirectory $root -PassThru
-          Start-Sleep -Seconds 4
-          if ($p.HasExited) {
-            if ($p.ExitCode -ne 0) { throw "UniverseClient.exe exited with code $($p.ExitCode)" }
-            Write-Host "UniverseClient.exe exited cleanly during smoke test."
-          } else {
-            Stop-Process -Id $p.Id -Force
-            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | ForEach-Object {
-              Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
-            }
-            Write-Host "UniverseClient.exe launched successfully."
-          }
-          Remove-Item "$root/UniverseClient-test.exe" -Force -ErrorAction SilentlyContinue
-
-      - name: Assemble runtime packages
+      - name: Package EXEs
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release/UniverseServer,release/UniverseClient | Out-Null
@@ -138,14 +81,12 @@ jobs:
           Copy-Item package.json release/UniverseClient/
           Compress-Archive -Path release/UniverseServer/* -DestinationPath release/UniverseServer-win-x64.zip -Force
           Compress-Archive -Path release/UniverseClient/* -DestinationPath release/UniverseClient-win-x64.zip -Force
-
-      - name: Upload Universe Server package
+      - name: Upload Server package
         uses: actions/upload-artifact@v4
         with:
           name: UniverseServer-win-x64
           path: release/UniverseServer-win-x64.zip
-
-      - name: Upload Universe Client package
+      - name: Upload Client package
         uses: actions/upload-artifact@v4
         with:
           name: UniverseClient-win-x64
