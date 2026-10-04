@@ -13,6 +13,7 @@
     "skipLibCheck": true,
     "noImplicitAny": false,
     "strictNullChecks": false,
+    "noImplicitThis": false,
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
