@@ -76,6 +76,10 @@ if ! compile_typescript; then
 fi
 
 # Step 4: Supervisor Auto-Restart Loop
+# Keep the Node API separate from the Vite development server (port 3000) unless PORT was explicitly supplied.
+export PORT="${PORT:-5001}"
+echo -e "${CYAN}[CONFIG] Node API PORT: ${PORT}${NC}"
+
 RESTART_COUNT=0
 MAX_RAPID_CRASHES=5
 
