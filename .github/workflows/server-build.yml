@@ -1,0 +1,35 @@
+name: Server TypeScript Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feature/admin-systems-terminal-exe
+    paths:
+      - "server/**"
+      - "shared/**"
+      - "package.json"
+      - "bun.lock"
+      - "tsconfig.server.json"
+      - ".github/workflows/server-build.yml"
+  pull_request:
+    paths:
+      - "server/**"
+      - "shared/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.server.json"
+      - ".github/workflows/server-build.yml"
+
+jobs:
+  server-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --no-audit --no-fund --ignore-scripts
+      - run: npm run server:build

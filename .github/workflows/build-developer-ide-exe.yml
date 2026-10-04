@@ -1,0 +1,30 @@
+name: Build Universe Developer IDE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feature/developer-tool-ide-exe
+    paths:
+      - "tools/UniverseDeveloperIDE/**"
+      - ".github/workflows/build-developer-ide-exe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish developer IDE
+        run: dotnet publish tools/UniverseDeveloperIDE/UniverseDeveloperIDE.csproj -c Release
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: UniverseDeveloperIDE-win-x64
+          path: tools/UniverseDeveloperIDE/bin/Release/net8.0-windows/win-x64/publish/UniverseDeveloperIDE.exe

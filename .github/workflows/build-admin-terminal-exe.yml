@@ -1,0 +1,24 @@
+name: Build Admin Systems Terminal EXE
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "tools/AdminSystemsTerminal/**"
+      - ".github/workflows/build-admin-terminal-exe.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish self-contained EXE
+        run: dotnet publish tools/AdminSystemsTerminal/AdminSystemsTerminal.csproj -c Release
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: UniverseAdminTerminal-win-x64
+          path: tools/AdminSystemsTerminal/bin/Release/net8.0-windows/win-x64/publish/UniverseAdminTerminal.exe

@@ -1,0 +1,31 @@
+name: Build Universe Server Launcher EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - fix/database-connection-diagnostics
+      - feature/windows-server-launcher-exe
+    paths:
+      - "tools/UniverseServerLauncher/**"
+      - ".github/workflows/build-server-launcher-exe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish self-contained Windows x64 launcher
+        run: dotnet publish tools/UniverseServerLauncher/UniverseServerLauncher.csproj -c Release
+      - name: Upload launcher EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: UniverseServerLauncher-win-x64
+          path: tools/UniverseServerLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseServerLauncher.exe
