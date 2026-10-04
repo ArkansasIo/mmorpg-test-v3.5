@@ -221,11 +221,6 @@ const shutdown = async (signal: string) => {
 process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
-}).catch((error) => {
-  console.error("Failed to initialize core game routes:", error);
-  process.exitCode = 1;
-});
-
 }
 
 void bootstrap().catch((error) => {
