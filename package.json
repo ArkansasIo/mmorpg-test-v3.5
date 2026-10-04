@@ -11,7 +11,7 @@
     "setup:install": "node scripts/setup.cjs",
     "config:env": "node scripts/env-config.cjs",
     "start:fullstack": "bash start-fullstack.sh",
-    "clean": "rm -rf dist server.js dist-server",
+    "clean": "node scripts/clean.cjs",
     "lint": "tsc --noEmit",
     "server:build": "tsc -p tsconfig.server.json",
     "server:start": "node dist-server/index.js",
@@ -27,7 +27,8 @@
     "build:server-launcher": "dotnet publish tools/UniverseServerLauncher/UniverseServerLauncher.csproj -c Release",
     "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run build && npm run server:build"
+    "check": "npm run lint && npm run build && npm run server:build && npm run test:dependency",
+    "start:fullstack:win": "start-fullstack.bat"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -71,5 +72,9 @@
   },
   "overrides": {
     "@grpc/grpc-js": "^1.14.5"
+  },
+  "engines": {
+    "node": ">=20 <25",
+    "npm": ">=10"
   }
 }
