@@ -12,7 +12,6 @@ on:
       - "shared/**"
       - "start-server.bat"
       - "package.json"
-      - "package-lock.json"
       - "tsconfig.server.json"
       - ".github/workflows/build-universe-exes.yml"
 
@@ -30,10 +29,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: TypeScript server build
         run: npm run server:build
@@ -103,7 +101,9 @@ jobs:
             Write-Host "UniverseServer.exe exited cleanly during smoke test."
           } else {
             Stop-Process -Id $p.Id -Force
-            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | Stop-Process -Id { $_.ProcessId } -Force -ErrorAction SilentlyContinue
+            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | ForEach-Object {
+              Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            }
             Write-Host "UniverseServer.exe launched successfully."
           }
           Remove-Item "$root/UniverseServer-test.exe" -Force -ErrorAction SilentlyContinue
@@ -121,7 +121,9 @@ jobs:
             Write-Host "UniverseClient.exe exited cleanly during smoke test."
           } else {
             Stop-Process -Id $p.Id -Force
-            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | Stop-Process -Id { $_.ProcessId } -Force -ErrorAction SilentlyContinue
+            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | ForEach-Object {
+              Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            }
             Write-Host "UniverseClient.exe launched successfully."
           }
           Remove-Item "$root/UniverseClient-test.exe" -Force -ErrorAction SilentlyContinue
@@ -134,7 +136,6 @@ jobs:
           Copy-Item "tools/UniverseClientLauncher/bin/Release/net8.0-windows/win-x64/publish/UniverseClient.exe" "release/UniverseClient/UniverseClient.exe"
           Copy-Item start-server.bat release/UniverseServer/
           Copy-Item package.json release/UniverseClient/
-          Copy-Item package-lock.json release/UniverseClient/ -ErrorAction SilentlyContinue
           Compress-Archive -Path release/UniverseServer/* -DestinationPath release/UniverseServer-win-x64.zip -Force
           Compress-Archive -Path release/UniverseClient/* -DestinationPath release/UniverseClient-win-x64.zip -Force
 
