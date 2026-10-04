@@ -38,12 +38,28 @@ jobs:
       - name: TypeScript server build
         run: npm run server:build
 
-      - name: Validate generated server JavaScript
+      - name: Validate every generated server JavaScript file
         shell: pwsh
         run: |
-          if (-not (Test-Path "dist-server/index.js")) { throw "dist-server/index.js was not generated." }
-          node --check "dist-server/index.js"
-          Write-Host "Server JavaScript syntax check passed."
+          $files = Get-ChildItem "dist-server" -Filter "*.js" -Recurse -File
+          if ($files.Count -eq 0) { throw "No generated JavaScript files were found in dist-server." }
+          foreach ($file in $files) {
+            node --check $file.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Node.js syntax validation failed: $($file.FullName)" }
+          }
+          Write-Host "Validated $($files.Count) generated server JavaScript file(s)."
+
+      - name: Verify generated index is not stale compiler/log output
+        shell: pwsh
+        run: |
+          $index = Get-Content "dist-server/index.js" -Raw
+          if ($index -match '^\s*\[\*\] Compiling') {
+            throw "dist-server/index.js contains stale compiler log text instead of JavaScript."
+          }
+          if ($index -notmatch 'app\.listen') {
+            throw "dist-server/index.js does not contain the expected Express server startup."
+          }
+          Write-Host "Generated server entrypoint is valid and current."
 
       - name: Frontend build
         run: npm run build
@@ -87,6 +103,7 @@ jobs:
             Write-Host "UniverseServer.exe exited cleanly during smoke test."
           } else {
             Stop-Process -Id $p.Id -Force
+            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | Stop-Process -Id { $_.ProcessId } -Force -ErrorAction SilentlyContinue
             Write-Host "UniverseServer.exe launched successfully."
           }
           Remove-Item "$root/UniverseServer-test.exe" -Force -ErrorAction SilentlyContinue
@@ -104,6 +121,7 @@ jobs:
             Write-Host "UniverseClient.exe exited cleanly during smoke test."
           } else {
             Stop-Process -Id $p.Id -Force
+            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)" | Stop-Process -Id { $_.ProcessId } -Force -ErrorAction SilentlyContinue
             Write-Host "UniverseClient.exe launched successfully."
           }
           Remove-Item "$root/UniverseClient-test.exe" -Force -ErrorAction SilentlyContinue
