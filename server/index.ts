@@ -125,10 +125,15 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
         : or(ilike(users.username, identifier), ilike(users.email, identifier)),
     ).limit(1);
 
-    if (!user || !user.passwordHash) {\n      return res.status(401).json({ message: "Invalid credentials" });\n    }\n    const passwordCheck = verifyPassword(password, user.passwordHash);\n    if (!passwordCheck.valid) {
+    if (!user || !user.passwordHash) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    if (passwordCheck.needsUpgrade) await db.update(users).set({ passwordHash: hashPassword(password) }).where(eq(users.id, user.id));\n    if (user.isBanned) {
+    const passwordCheck = verifyPassword(password, user.passwordHash);
+    if (!passwordCheck.valid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+    if (passwordCheck.needsUpgrade) await db.update(users).set({ passwordHash: hashPassword(password) }).where(eq(users.id, user.id));
+    if (user.isBanned) {
       return res.status(403).json({ message: user.banReason || "Account is banned" });
     }
 
