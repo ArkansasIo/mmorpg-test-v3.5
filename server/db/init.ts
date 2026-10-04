@@ -1,6 +1,7 @@
 import { db, pool } from '.';
 import { users, adminUsers, playerStates } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
+import crypto from 'crypto';
 
 async function tableExists(tableName: string): Promise<boolean> {
   try {
@@ -33,102 +34,71 @@ export async function initializeDatabase() {
 }
 
 async function ensureAdminUser() {
-  const adminUsername = 'admin';
-  
+  const adminUsername = String(process.env.ADMIN_BOOTSTRAP_USERNAME || '').trim();
+  const adminEmail = String(process.env.ADMIN_BOOTSTRAP_EMAIL || '').trim();
+  const adminPassword = String(process.env.ADMIN_BOOTSTRAP_PASSWORD || '');
+  if (!adminUsername || !adminEmail || adminPassword.length < 12) {
+    console.log('ℹ️ Admin bootstrap skipped: ADMIN_BOOTSTRAP_* credentials are not fully configured.');
+    return;
+  }
+
   try {
     const usersTableReady = await tableExists('users');
     const adminUsersTableReady = await tableExists('admin_users');
-    if (!usersTableReady || !adminUsersTableReady) {
-      console.warn('⚠️ Skipping admin user bootstrap: required tables are missing (users/admin_users)');
-      return;
-    }
+    if (!usersTableReady || !adminUsersTableReady) return;
 
-    // Check if admin exists
-    const existing = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, adminUsername));
-
-    if (existing.length > 0) {
-      console.log('✅ Admin user already exists');
-      
-      // Ensure admin has superAdmin role
-      const adminUser = existing[0];
-      const isAdmin = await db
-        .select()
-        .from(adminUsers)
-        .where(eq(adminUsers.userId, adminUser.id));
-      
-      if (isAdmin.length === 0) {
-        await db.insert(adminUsers).values({
-          userId: adminUser.id,
-          role: 'superAdmin',
-          permissions: ['all'],
-          createdAt: new Date(),
-        });
-        console.log('✅ Added superAdmin role to admin user');
-      }
-      return;
-    }
-
-    // Create admin user
-    const adminUser = await db
-      .insert(users)
-      .values({
+    const existing = await db.select().from(users).where(eq(users.username, adminUsername));
+    let adminUser = existing[0];
+    if (!adminUser) {
+      const inserted = await db.insert(users).values({
         username: adminUsername,
-        passwordHash: hashPassword('admin123'),
-        email: 'admin@universe-empire-domions.game',
+        passwordHash: hashPassword(adminPassword),
+        email: adminEmail,
         createdAt: new Date(),
-      })
-      .returning();
+      }).returning();
+      adminUser = inserted[0];
+      console.log(`✅ Created configured bootstrap admin: ${adminUsername}`);
+    }
 
-    // Add admin role
-    await db.insert(adminUsers).values({
-      userId: adminUser[0].id,
-      role: 'superAdmin',
-      permissions: ['all'],
-      createdAt: new Date(),
-    });
-
-    console.log('✅ Created default admin user (username: admin, password: admin123)');
-  } catch (error) {
-    console.warn('⚠️ Could not ensure admin user:', error);
-  }
-}
-
-async function ensureTestAccounts() {
-  const testAccounts = [
-    { username: 'player1', password: 'password123' },
-    { username: 'player2', password: 'password123' },
-    { username: 'player3', password: 'password123' },
-  ];
-
-  try {
-    for (const account of testAccounts) {
-      const existing = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, account.username));
-
-      if (existing.length === 0) {
-        await db.insert(users).values({
-          username: account.username,
-          passwordHash: hashPassword(account.password),
-          email: `${account.username}@universe-empire-domions.game`,
-          createdAt: new Date(),
-        });
-        console.log(`✅ Created test account: ${account.username}`);
-      }
+    const isAdmin = await db.select().from(adminUsers).where(eq(adminUsers.userId, adminUser.id));
+    if (isAdmin.length === 0) {
+      await db.insert(adminUsers).values({
+        userId: adminUser.id,
+        role: process.env.ADMIN_BOOTSTRAP_ROLE || 'founder',
+        permissions: ['all'],
+        createdAt: new Date(),
+      });
+      console.log(`✅ Granted admin role to ${adminUsername}`);
     }
   } catch (error) {
-    console.warn('⚠️ Could not ensure test accounts:', error);
+    console.warn('⚠️ Could not ensure configured admin:', error);
   }
 }
+async function ensureTestAccounts() {
+  if (process.env.NODE_ENV !== 'development' || !['1','true','yes','on'].includes(String(process.env.ENABLE_DEMO_ACCOUNTS || '').toLowerCase())) return;
+  const testAccounts = [
+    { username: 'player1', password: String(process.env.DEV_DEMO_PASSWORD || '') },
+    { username: 'player2', password: String(process.env.DEV_DEMO_PASSWORD || '') },
+    { username: 'player3', password: String(process.env.DEV_DEMO_PASSWORD || '') },
+  ].filter(a => a.password.length >= 12);
 
+  for (const account of testAccounts) {
+    const existing = await db.select().from(users).where(eq(users.username, account.username));
+    if (existing.length === 0) {
+      await db.insert(users).values({
+        username: account.username,
+        passwordHash: hashPassword(account.password),
+        email: `${account.username}@universe-empire-domions.game`,
+        createdAt: new Date(),
+      });
+    }
+  }
+}
 // Simple password hashing (use crypto for production)
 function hashPassword(password: string): string {
-  const crypto = require('crypto');
-  return crypto.createHash('sha256').update(password).digest('hex');
+  const salt = crypto.randomBytes(16);
+  const derived = crypto.scryptSync(password, salt, 64, { N: 16384, r: 8, p: 1, maxmem: 32 * 1024 * 1024 });
+  return "scrypt$16384$8$1$" + salt.toString("base64url") + "$" + derived.toString("base64url");
 }
 
 export async function closeDatabase() {
